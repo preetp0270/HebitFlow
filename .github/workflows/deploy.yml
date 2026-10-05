@@ -1,0 +1,106 @@
+name: HabitFlow CI/CD
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+env:
+  NODE_VERSION: "20"
+
+jobs:
+  backend:
+    name: Backend test & build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm install
+      - name: Run tests
+        run: npm test
+        env:
+          NODE_ENV: test
+          JWT_SECRET: ci_test_jwt_secret
+          JWT_REFRESH_SECRET: ci_test_refresh_secret
+      - name: Syntax check
+        run: node --check src/server.js
+
+  website:
+    name: Website build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: website
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: website/package-lock.json
+      - run: npm install
+      - run: npm run build
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL || 'https://example.onrender.com' }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: website-dist
+          path: website/dist
+
+  android:
+    name: Android APK
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: android
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+      - name: Grant execute permission for gradlew
+        run: |
+          if [ -f gradlew ]; then chmod +x gradlew; fi
+      - name: Build debug APK
+        run: |
+          if [ -f gradlew ]; then
+            ./gradlew assembleDebug --stacktrace
+          else
+            echo "Gradle wrapper not present yet — open project in Android Studio once to generate wrapper."
+            exit 0
+          fi
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: android-apk
+          path: android/app/build/outputs/apk/**/*.apk
+          if-no-files-found: ignore
+
+  deploy-backend:
+    name: Deploy backend to Render
+    needs: [backend]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Trigger Render deploy
+        env:
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$RENDER_DEPLOY_HOOK" ]; then
+            echo "RENDER_DEPLOY_HOOK secret not set — skip deploy"
+            exit 0
+          fi
+          curl -sS -X POST "$RENDER_DEPLOY_HOOK"
+          echo "Deploy hook triggered"

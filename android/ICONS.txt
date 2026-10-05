@@ -1,0 +1,1 @@
+Open android/ in Android Studio — it will offer to create default launcher icons if mipmap is empty.

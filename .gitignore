@@ -1,0 +1,46 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Environment & secrets
+.env
+.env.local
+.env.*.local
+*.env
+backend/.env
+website/.env
+
+# Android
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/*.iml
+android/.idea/
+*.keystore
+*.jks
+*.apk
+*.aab
+
+# IDE
+.idea/
+.vscode/
+*.iml
+.DS_Store
+
+# Logs & coverage
+logs/
+*.log
+coverage/
+.nyc_output/
+
+# Build outputs
+website/dist/
+backend/coverage/
+
+# OS
+Thumbs.db
+
+# Test / temp
+*.swp
+*.tmp

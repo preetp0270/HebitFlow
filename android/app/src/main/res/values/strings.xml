@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">HabitFlow</string>
+    <string name="channel_reminders">Habit reminders</string>
+    <string name="channel_reminders_desc">Local reminders for your habits</string>
+</resources>
