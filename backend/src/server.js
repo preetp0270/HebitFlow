@@ -1,3 +1,4 @@
+const dns = require('dns');
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -12,6 +13,13 @@ const habitRoutes = require('./routes/habitRoutes');
 const statisticsRoutes = require('./routes/statisticsRoutes');
 const userRoutes = require('./routes/userRoutes');
 const achievementRoutes = require('./routes/achievementRoutes');
+
+// Prefer reliable public DNS (helps MongoDB Atlas / network restricted environments)
+try {
+  dns.setServers(['8.8.8.8', '8.8.4.4']);
+} catch {
+  // ignore on restricted environments
+}
 
 const app = express();
 
