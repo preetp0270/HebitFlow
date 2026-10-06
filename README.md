@@ -7,7 +7,7 @@ HabitFlow/
 ├── android/          # Kotlin · Jetpack Compose · Room · offline-first
 ├── website/          # React · Vite · React Router
 ├── backend/          # Express · Mongoose · JWT
-├── .github/workflows/deploy.yml
+├── .github/workflows/build.yml
 ├── .gitignore
 └── README.md
 ```
@@ -154,12 +154,16 @@ Host `website/dist` on Netlify, Vercel, Cloudflare Pages, or any static host. Se
 
 ### GitHub Actions
 
-`.github/workflows/deploy.yml`:
+Single workflow: `.github/workflows/build.yml`
 
-1. Backend install + Jest tests  
-2. Website production build (artifact)  
-3. Android APK attempt (artifact)  
-4. Optional Render deploy hook on `main`
+On every **push** / **pull request** to `main` or `master` it:
+
+1. **Backend** — `npm install` + load-check
+2. **Website** — `npm run build` (Vite)
+3. **Android** — `./gradlew assembleDebug` and uploads the APK artifact
+
+No deploy steps. Download the APK from the Actions run → Artifacts.
+
 
 ## Security notes
 
