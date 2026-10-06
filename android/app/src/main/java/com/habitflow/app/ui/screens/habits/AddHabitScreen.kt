@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.sp
 import com.habitflow.app.HabitFlowApp
 import com.habitflow.app.data.remote.ApiClient
 import com.habitflow.app.data.remote.CreateHabitRequest
+import com.habitflow.app.util.ReminderScheduler
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
 
@@ -320,8 +321,18 @@ fun AddHabitScreen(habitId: String? = null, onDone: () -> Unit) {
                         )
                         val result = runCatching {
                             if (isEdit) {
-                                ApiClient.api.updateHabit(habitId!!, req)
+                                val res = ApiClient.api.updateHabit(habitId!!, req)
                                 HabitFlowApp.instance.habitRepository.syncFromServer()
+                                val h = res.data?.habit
+                                if (h != null) {
+                                    if (req.reminderEnabled && !req.reminderTime.isNullOrBlank()) {
+                                        ReminderScheduler.schedule(
+                                            HabitFlowApp.instance, h._id, h.name, req.reminderTime!!
+                                        )
+                                    } else {
+                                        ReminderScheduler.cancel(HabitFlowApp.instance, h._id)
+                                    }
+                                }
                             } else {
                                 HabitFlowApp.instance.habitRepository.createHabit(req).getOrThrow()
                             }

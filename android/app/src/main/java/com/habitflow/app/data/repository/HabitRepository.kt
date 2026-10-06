@@ -7,7 +7,9 @@ import com.habitflow.app.data.remote.ApiClient
 import com.habitflow.app.data.remote.CreateHabitRequest
 import com.habitflow.app.data.remote.HabitDto
 import com.habitflow.app.data.remote.TodayData
+import com.habitflow.app.util.ReminderScheduler
 import com.habitflow.app.util.TokenStore
+import com.habitflow.app.HabitFlowApp
 import com.google.gson.Gson
 import kotlinx.coroutines.flow.Flow
 import java.time.LocalDate
@@ -28,7 +30,9 @@ class HabitRepository(
         if (!tokenStore.isLoggedIn()) return
         val res = api.listHabits()
         val habits = res.data?.habits ?: return
-        habitDao.upsertAll(habits.map { it.toEntity() })
+        val entities = habits.map { it.toEntity() }
+        habitDao.upsertAll(entities)
+        entities.forEach { applyReminder(it) }
     }
 
     suspend fun getToday(): Result<TodayData> = runCatching {
@@ -75,14 +79,25 @@ class HabitRepository(
         val habit = res.data?.habit ?: error(res.message ?: "Create failed")
         val entity = habit.toEntity()
         habitDao.upsert(entity)
+        applyReminder(entity)
         entity
     }
 
     suspend fun deleteHabit(id: String) {
+        ReminderScheduler.cancel(HabitFlowApp.instance, id)
         habitDao.softDelete(id)
         try {
             api.deleteHabit(id)
         } catch (_: Exception) {
+        }
+    }
+
+    fun applyReminder(entity: HabitEntity) {
+        val ctx = HabitFlowApp.instance
+        if (entity.reminderEnabled && !entity.reminderTime.isNullOrBlank()) {
+            ReminderScheduler.schedule(ctx, entity.id, entity.name, entity.reminderTime)
+        } else {
+            ReminderScheduler.cancel(ctx, entity.id)
         }
     }
 

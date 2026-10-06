@@ -9,10 +9,15 @@ import androidx.core.app.NotificationCompat
 import com.habitflow.app.HabitFlowApp
 import com.habitflow.app.MainActivity
 import com.habitflow.app.R
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class HabitReminderReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val name = intent.getStringExtra(EXTRA_HABIT_NAME) ?: "habit"
+        val habitId = intent.getStringExtra(EXTRA_HABIT_ID) ?: ""
+
         val open = Intent(context, MainActivity::class.java)
         val pi = PendingIntent.getActivity(
             context, 0, open,
@@ -20,13 +25,31 @@ class HabitReminderReceiver : BroadcastReceiver() {
         )
         val notification = NotificationCompat.Builder(context, HabitFlowApp.CHANNEL_REMINDERS)
             .setSmallIcon(android.R.drawable.ic_popup_reminder)
-            .setContentTitle("HabitFlow")
-            .setContentText("Time for your \"$name\" habit 💧")
+            .setContentTitle("HabitFlow reminder")
+            .setContentText("Time for \"$name\"")
             .setContentIntent(pi)
             .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
             .build()
         val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        nm.notify(name.hashCode(), notification)
+        nm.notify((habitId.ifBlank { name }).hashCode(), notification)
+
+        // Re-arm for tomorrow (daily reminder)
+        if (habitId.isNotBlank()) {
+            val pending = goAsync()
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    val habit = HabitFlowApp.instance.database.habitDao().getById(habitId)
+                    val time = habit?.reminderTime
+                    if (habit != null && habit.reminderEnabled && !time.isNullOrBlank()) {
+                        ReminderScheduler.schedule(context, habitId, habit.name, time)
+                    }
+                } catch (_: Exception) {
+                } finally {
+                    pending.finish()
+                }
+            }
+        }
     }
 
     companion object {
@@ -37,6 +60,19 @@ class HabitReminderReceiver : BroadcastReceiver() {
 
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        // Re-schedule reminders after boot if needed (extend with WorkManager/AlarmManager)
+        if (intent.action != Intent.ACTION_BOOT_COMPLETED) return
+        val pending = goAsync()
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val habits = HabitFlowApp.instance.database.habitDao().getActive()
+                val list = habits
+                    .filter { it.reminderEnabled && !it.reminderTime.isNullOrBlank() }
+                    .map { Triple(it.id, it.name, it.reminderTime!!) }
+                ReminderScheduler.rescheduleAll(context, list)
+            } catch (_: Exception) {
+            } finally {
+                pending.finish()
+            }
+        }
     }
 }
