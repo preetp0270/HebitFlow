@@ -21,21 +21,23 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
-
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+          cache: gradle
+          cache-dependency-path: android/**/*.gradle*
 
       - name: Accept Android licenses
-        run: yes | sdkmanager --licenses >/dev/null || true
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          mkdir -p "$ANDROID_HOME/licenses"
+          echo -e "24333f8a63b6825ea9c5514f83c2829b004d1fee\n" > "$ANDROID_HOME/licenses/android-sdk-license"
+          echo -e "84831b9409646a918e30573bab4c9c91346d8abd\n" > "$ANDROID_HOME/licenses/android-sdk-preview-license"
+          echo -e "d56f5187479451eabf01fb78af6dfcb131a6481e\n" > "$ANDROID_HOME/licenses/android-sdk-arm-dbt-license"
+          yes | sdkmanager --licenses >/dev/null 2>&1 || true
 
       - name: Make Gradle Wrapper Executable
         run: chmod +x gradlew
 
       - name: Build Debug APK
-        run: ./gradlew assembleDebug --stacktrace
+        run: ./gradlew assembleDebug --stacktrace --no-daemon
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
@@ -43,4 +45,3 @@ jobs:
           name: habitflow-debug-apk
           path: android/app/build/outputs/apk/debug/*.apk
           retention-days: 14
-
