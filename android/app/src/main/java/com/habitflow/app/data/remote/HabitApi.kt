@@ -3,6 +3,7 @@ package com.habitflow.app.data.remote
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
+import retrofit2.http.HTTP
 import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
@@ -45,6 +46,18 @@ interface HabitApi {
     @POST("api/habits/{id}/complete")
     suspend fun complete(@Path("id") id: String, @Body body: Map<String, String> = emptyMap()): ApiResponse<Any>
 
-    @DELETE("api/habits/{id}/complete")
+    @HTTP(method = "DELETE", path = "api/habits/{id}/complete", hasBody = true)
     suspend fun uncomplete(@Path("id") id: String, @Body body: Map<String, String> = emptyMap()): ApiResponse<Any>
+
+    @GET("api/statistics")
+    suspend fun statistics(): ApiResponse<StatisticsData>
+
+    @GET("api/statistics/weekly")
+    suspend fun weeklyStats(): ApiResponse<WeeklyData>
+
+    @GET("api/statistics/monthly")
+    suspend fun monthlyStats(
+        @Query("year") year: Int? = null,
+        @Query("month") month: Int? = null
+    ): ApiResponse<MonthlyData>
 }

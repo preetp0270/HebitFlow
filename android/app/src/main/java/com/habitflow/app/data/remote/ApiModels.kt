@@ -90,3 +90,33 @@ data class CreateHabitRequest(
 data class LoginRequest(val email: String, val password: String)
 data class RegisterRequest(val name: String, val email: String, val password: String)
 data class RefreshRequest(val refreshToken: String)
+
+data class StatisticsData(
+    val totalHabits: Int = 0,
+    val totalCompletions: Int = 0,
+    val currentStreak: Int = 0,
+    val bestStreak: Int = 0,
+    val overallCompletionPercentage: Int = 0,
+    val mostConsistent: ConsistentHabitDto? = null,
+    val leastConsistent: ConsistentHabitDto? = null
+)
+
+data class ConsistentHabitDto(
+    val habitId: String? = null,
+    val name: String? = null,
+    val percentage: Int = 0
+)
+
+data class WeeklyData(val series: List<DaySeriesDto> = emptyList())
+data class MonthlyData(
+    val year: Int = 0,
+    val month: Int = 0,
+    val series: List<DaySeriesDto> = emptyList()
+)
+
+data class DaySeriesDto(
+    val date: String,
+    val scheduled: Int = 0,
+    val completed: Int = 0,
+    val percentage: Int = 0
+)

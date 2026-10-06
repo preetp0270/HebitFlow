@@ -17,7 +17,7 @@ android {
         versionName = "1.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:5000/\"")
+        buildConfigField("String", "API_BASE_URL", "\"https://hebitflow.onrender.com/\"")
     }
 
     buildTypes {
@@ -28,10 +28,10 @@ android {
                 "proguard-rules.pro"
             )
             // Production API URL via BuildConfig or local.properties / CI secrets
-            buildConfigField("String", "API_BASE_URL", "\"https://YOUR_RENDER_URL.onrender.com/\"")
+            buildConfigField("String", "API_BASE_URL", "\"https://hebitflow.onrender.com/\"")
         }
         debug {
-            buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:5000/\"")
+            buildConfigField("String", "API_BASE_URL", "\"https://hebitflow.onrender.com/\"")
         }
     }
 

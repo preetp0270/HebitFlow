@@ -1,41 +1,15 @@
 package com.habitflow.app.ui.screens.today
 
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -44,175 +18,138 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.habitflow.app.HabitFlowApp
+import com.habitflow.app.data.remote.ApiClient
+import com.habitflow.app.data.remote.StatisticsData
 import com.habitflow.app.data.remote.TodayData
-import com.habitflow.app.data.remote.TodayItemDto
+import com.habitflow.app.ui.components.*
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 @Composable
 fun TodayScreen(onAddHabit: () -> Unit) {
     var data by remember { mutableStateOf<TodayData?>(null) }
+    var stats by remember { mutableStateOf<StatisticsData?>(null) }
     var loading by remember { mutableStateOf(true) }
-    var offlineNote by remember { mutableStateOf(false) }
+    var offline by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     fun reload() {
         scope.launch {
             loading = true
-            HabitFlowApp.instance.habitRepository.pushPending()
-            HabitFlowApp.instance.habitRepository.syncFromServer()
-            val result = HabitFlowApp.instance.habitRepository.getToday()
-            result.onSuccess {
-                data = it
-                offlineNote = false
-            }.onFailure {
-                offlineNote = true
-            }
+            val repo = HabitFlowApp.instance.habitRepository
+            repo.pushPending()
+            runCatching { repo.syncFromServer() }
+            repo.getToday().onSuccess { data = it; offline = false }.onFailure { offline = true }
+            runCatching { stats = ApiClient.api.statistics().data }
             loading = false
         }
     }
-
     LaunchedEffect(Unit) { reload() }
 
-    val hour = java.time.LocalTime.now().hour
     val greeting = when {
-        hour < 12 -> "Good morning"
-        hour < 17 -> "Good afternoon"
+        LocalTime.now().hour < 12 -> "Good morning"
+        LocalTime.now().hour < 17 -> "Good afternoon"
         else -> "Good evening"
     }
-    val dateStr = LocalDate.now().format(DateTimeFormatter.ofPattern("EEEE, MMMM d"))
+    val dateStr = LocalDate.now().format(DateTimeFormatter.ofPattern("EEEE, MMMM d", Locale.getDefault()))
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
         floatingActionButton = {
-            FloatingActionButton(onClick = onAddHabit) {
-                Icon(Icons.Default.Add, contentDescription = "Add habit")
+            FloatingActionButton(
+                onClick = onAddHabit,
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                shape = RoundedCornerShape(18.dp)
+            ) {
+                Row(Modifier.padding(horizontal = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Add, null)
+                    Text(" New Habit", fontWeight = FontWeight.SemiBold)
+                }
             }
         }
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 20.dp)
-        ) {
-            Spacer(Modifier.height(16.dp))
-            Text("$greeting 👋", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-            Text(dateStr, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            if (offlineNote) {
-                Text("Offline — showing last synced data", color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
-            }
-            Spacer(Modifier.height(16.dp))
-
-            val progress = data?.progress
-            if (progress != null) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Column(Modifier.padding(16.dp)) {
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("Today's Progress", fontWeight = FontWeight.SemiBold)
-                            Text("${progress.percentage}%", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-                        }
-                        Spacer(Modifier.height(8.dp))
-                        LinearProgressIndicator(
-                            progress = { progress.percentage / 100f },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(10.dp)
-                                .clip(RoundedCornerShape(5.dp)),
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        Text(
-                            "${progress.completed} / ${progress.total} completed",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = 14.sp
-                        )
+        Column(Modifier.fillMaxSize().padding(padding)) {
+            HabitForgeTopBar(synced = !offline)
+            LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                item {
+                    Text(dateStr.uppercase(Locale.getDefault()), fontSize = 12.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant, letterSpacing = 0.6.sp)
+                    Text("$greeting 👋", fontWeight = FontWeight.Bold, fontSize = 26.sp)
+                    Text("Build better. Every day.", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                item {
+                    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Color(0xFF131B2E)).padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text(if (offline) "⚠" else "✓", color = if (offline) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.Bold)
+                        Text(if (offline) "  Offline — will sync when online" else "  All habits synced across Android & Web", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
-            }
-
-            Spacer(Modifier.height(20.dp))
-            Text("Today's Habits", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-            Spacer(Modifier.height(8.dp))
-
-            if (loading) {
-                Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
+                item {
+                    val p = data?.progress
+                    MomentumCard(p?.percentage ?: 0, p?.completed ?: 0, p?.total ?: 0, stats?.currentStreak ?: 0)
                 }
-            } else if (data?.items.isNullOrEmpty()) {
-                Column(
-                    modifier = Modifier.fillMaxWidth().padding(32.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text("No habits yet", fontWeight = FontWeight.SemiBold)
-                    Text(
-                        "Start with one small habit and build from there.",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                item {
+                    SectionLabel("This Week")
+                    WeekStrip()
                 }
-            } else {
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    items(data!!.items, key = { it.habit._id }) { item ->
-                        HabitRow(item) {
+                item { SectionLabel("Today's Habits", "${data?.items?.size ?: 0} total") }
+                if (loading) item { Box(Modifier.fillMaxWidth().height(120.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() } }
+                else if (data?.items.isNullOrEmpty()) item {
+                    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("No habits yet", fontWeight = FontWeight.SemiBold)
+                        Text("Start with one small habit and build from there.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
+                    }
+                } else items(data!!.items, key = { it.habit._id }) { item ->
+                    HabitRowCard(
+                        icon = item.habit.icon ?: "🎯",
+                        name = item.habit.name,
+                        subtitle = item.habit.description?.ifBlank { item.habit.frequencyType.replace('_', ' ') } ?: item.habit.frequencyType.replace('_', ' '),
+                        streak = item.currentStreak,
+                        completed = item.completed,
+                        onToggle = {
                             scope.launch {
-                                if (item.completed) {
-                                    HabitFlowApp.instance.habitRepository.uncompleteHabit(item.habit._id)
-                                } else {
-                                    HabitFlowApp.instance.habitRepository.completeHabit(item.habit._id)
-                                }
+                                if (item.completed) HabitFlowApp.instance.habitRepository.uncompleteHabit(item.habit._id)
+                                else HabitFlowApp.instance.habitRepository.completeHabit(item.habit._id)
                                 reload()
                             }
                         }
-                    }
+                    )
                 }
+                item { Spacer(Modifier.height(80.dp)) }
             }
         }
     }
 }
 
 @Composable
-private fun HabitRow(item: TodayItemDto, onToggle: () -> Unit) {
-    val bg by animateColorAsState(
-        if (item.completed) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
-        else MaterialTheme.colorScheme.surface,
-        label = "habitBg"
-    )
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = bg)
-    ) {
-        Row(
-            modifier = Modifier.padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(44.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(item.habit.icon ?: "🎯", fontSize = 22.sp)
-            }
-            Column(modifier = Modifier.weight(1f).padding(horizontal = 12.dp)) {
-                Text(item.habit.name, fontWeight = FontWeight.SemiBold)
-                Text("🔥 ${item.currentStreak} day streak", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            IconButton(
-                onClick = onToggle,
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(
-                        if (item.completed) Color(0xFF22C55E) else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-                    )
-            ) {
-                if (item.completed) {
-                    Icon(Icons.Default.Check, contentDescription = "Completed", tint = Color.White)
+private fun WeekStrip() {
+    var series by remember { mutableStateOf(List(7) { -1 }) }
+    LaunchedEffect(Unit) {
+        runCatching { series = ApiClient.api.weeklyStats().data?.series.orEmpty().map { it.percentage } }
+    }
+    val labels = listOf("M", "T", "W", "T", "F", "S", "S")
+    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).padding(14.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+        labels.forEachIndexed { i, label ->
+            val pct = series.getOrNull(i) ?: -1
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(label, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(Modifier.height(8.dp))
+                Box(
+                    Modifier.size(36.dp).clip(CircleShape).background(
+                        when {
+                            pct == 100 -> MaterialTheme.colorScheme.secondary
+                            pct > 0 -> MaterialTheme.colorScheme.primaryContainer
+                            else -> Color(0xFF2D3449)
+                        }
+                    ), contentAlignment = Alignment.Center
+                ) {
+                    when {
+                        pct == 100 -> Text("✓", color = Color(0xFF003824), fontWeight = FontWeight.Bold)
+                        pct > 0 -> Text("$pct", fontSize = 9.sp, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                        else -> Box(Modifier.size(6.dp).clip(CircleShape).background(Color(0xFF464554)))
+                    }
                 }
             }
         }
