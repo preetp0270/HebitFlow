@@ -26,7 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun HabitForgeTopBar(title: String = "HabitForge", synced: Boolean = true, userInitial: String = "U") {
+fun HabitFlowTopBar(title: String = "HabitFlow", synced: Boolean = true, userInitial: String = "U") {
     Row(
         Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically

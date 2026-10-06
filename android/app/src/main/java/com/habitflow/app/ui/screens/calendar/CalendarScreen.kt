@@ -24,7 +24,7 @@ import androidx.compose.ui.unit.sp
 import com.habitflow.app.data.remote.ApiClient
 import com.habitflow.app.data.remote.DaySeriesDto
 import com.habitflow.app.data.remote.TodayItemDto
-import com.habitflow.app.ui.components.HabitForgeTopBar
+import com.habitflow.app.ui.components.HabitFlowTopBar
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.YearMonth
@@ -63,7 +63,7 @@ fun CalendarScreen() {
     val daysInMonth = month.lengthOfMonth()
 
     Column(Modifier.fillMaxSize()) {
-        HabitForgeTopBar()
+        HabitFlowTopBar()
         Column(Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 8.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                 IconButton(onClick = { month = month.minusMonths(1) }) { Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, "Prev") }

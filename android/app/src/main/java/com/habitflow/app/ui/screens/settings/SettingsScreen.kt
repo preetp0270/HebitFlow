@@ -14,14 +14,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.habitflow.app.HabitFlowApp
-import com.habitflow.app.ui.components.HabitForgeTopBar
+import com.habitflow.app.ui.components.HabitFlowTopBar
 import kotlinx.coroutines.launch
 
 @Composable
 fun SettingsScreen(onLoggedOut: () -> Unit, onManageHabits: () -> Unit = {}) {
     val scope = rememberCoroutineScope()
     Column(Modifier.fillMaxSize()) {
-        HabitForgeTopBar()
+        HabitFlowTopBar()
         Column(Modifier.padding(16.dp)) {
             Text("Settings", fontWeight = FontWeight.Bold, fontSize = 24.sp)
             Text("Account and habits", color = MaterialTheme.colorScheme.onSurfaceVariant)

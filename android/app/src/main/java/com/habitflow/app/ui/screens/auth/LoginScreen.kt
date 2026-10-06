@@ -25,7 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import com.habitflow.app.HabitForgeApp
+import com.habitflow.app.HabitFlowApp
 import kotlinx.coroutines.launch
 
 @Composable
@@ -43,7 +43,7 @@ fun LoginScreen(onLoggedIn: () -> Unit, onRegister: () -> Unit) {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("HabitForge", style = MaterialTheme.typography.headlineLarge, color = MaterialTheme.colorScheme.primary)
+        Text("HabitFlow", style = MaterialTheme.typography.headlineLarge, color = MaterialTheme.colorScheme.primary)
         Text("Welcome back", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(24.dp))
         OutlinedTextField(
@@ -73,10 +73,10 @@ fun LoginScreen(onLoggedIn: () -> Unit, onRegister: () -> Unit) {
                 loading = true
                 error = null
                 scope.launch {
-                    val result = HabitForgeApp.instance.authRepository.login(email.trim(), password)
+                    val result = HabitFlowApp.instance.authRepository.login(email.trim(), password)
                     loading = false
                     result.onSuccess {
-                        HabitForgeApp.instance.habitRepository.syncFromServer()
+                        HabitFlowApp.instance.habitRepository.syncFromServer()
                         onLoggedIn()
                     }.onFailure { error = it.message ?: "Login failed" }
                 }
@@ -132,7 +132,7 @@ fun RegisterScreen(onRegistered: () -> Unit, onBack: () -> Unit) {
                 loading = true
                 error = null
                 scope.launch {
-                    val result = HabitForgeApp.instance.authRepository.register(name.trim(), email.trim(), password)
+                    val result = HabitFlowApp.instance.authRepository.register(name.trim(), email.trim(), password)
                     loading = false
                     result.onSuccess { onRegistered() }.onFailure { error = it.message ?: "Failed" }
                 }

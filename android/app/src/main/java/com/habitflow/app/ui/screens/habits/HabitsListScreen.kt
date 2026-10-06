@@ -19,7 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.habitflow.app.HabitFlowApp
 import com.habitflow.app.data.local.HabitEntity
-import com.habitflow.app.ui.components.HabitForgeTopBar
+import com.habitflow.app.ui.components.HabitFlowTopBar
 import kotlinx.coroutines.launch
 
 @Composable
@@ -46,7 +46,7 @@ fun HabitsListScreen(onAdd: () -> Unit, onEdit: (String) -> Unit) {
         }
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
-            HabitForgeTopBar()
+            HabitFlowTopBar()
             Column(Modifier.padding(16.dp)) {
                 Text("Manage Habits", fontWeight = FontWeight.Bold, fontSize = 24.sp)
                 Text("Edit or delete your habits", color = MaterialTheme.colorScheme.onSurfaceVariant)

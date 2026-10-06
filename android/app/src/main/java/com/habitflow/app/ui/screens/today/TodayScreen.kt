@@ -73,7 +73,7 @@ fun TodayScreen(onAddHabit: () -> Unit) {
         }
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
-            HabitForgeTopBar(synced = !offline)
+            HabitFlowTopBar(synced = !offline)
             LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 item {
                     Text(dateStr.uppercase(Locale.getDefault()), fontSize = 12.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant, letterSpacing = 0.6.sp)

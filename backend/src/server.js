@@ -75,8 +75,12 @@ const limiter = rateLimit({
   max: config.rateLimitMax,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { success: false, message: 'Too many requests, please try again later' },
+  message: {
+    success: false,
+    message: 'Too many requests (rate limit). Wait a few minutes and try again.',
+  },
 });
+// Generous limit on /api; health is outside this path
 app.use('/api/', limiter);
 
 app.get('/health', (req, res) => {

@@ -16,7 +16,7 @@ import androidx.compose.ui.unit.sp
 import com.habitflow.app.data.remote.ApiClient
 import com.habitflow.app.data.remote.DaySeriesDto
 import com.habitflow.app.data.remote.StatisticsData
-import com.habitflow.app.ui.components.HabitForgeTopBar
+import com.habitflow.app.ui.components.HabitFlowTopBar
 
 @Composable
 fun StatisticsScreen() {
@@ -35,7 +35,7 @@ fun StatisticsScreen() {
     }
 
     Column(Modifier.fillMaxSize()) {
-        HabitForgeTopBar()
+        HabitFlowTopBar()
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
             Text("Your Progress", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(16.dp))
