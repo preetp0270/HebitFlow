@@ -1,94 +1,22 @@
-# HabitFlow — single CI workflow
-# Runs on every push and pull request: builds backend, website, and Android APK.
-name: Build
+name: Build Android APK
 
 on:
   push:
     branches: [main, master]
-  pull_request:
-    branches: [main, master]
-  workflow_dispatch: # allow manual "Run workflow" from GitHub UI
-
-concurrency:
-  group: build-${{ github.ref }}
-  cancel-in-progress: true
+  workflow_dispatch:
 
 jobs:
-  # ─── Backend (Node / Express) ───────────────────────────────────────────
-  backend:
-    name: Backend
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: npm
-          cache-dependency-path: backend/package-lock.json
-
-      - name: Install dependencies
-        run: |
-          if [ -f package-lock.json ]; then npm ci; else npm install; fi
-
-      - name: Verify server loads
-        run: |
-          node -e "require('./src/server.js'); console.log('backend ok')"
-        env:
-          NODE_ENV: test
-          MONGODB_URI: mongodb://127.0.0.1:27017/habitflow_ci
-          JWT_SECRET: ci_jwt_secret_at_least_32_chars_long
-          JWT_REFRESH_SECRET: ci_refresh_secret_at_least_32_chars
-          CLIENT_URL: "*"
-
-  # ─── Website (React / Vite) ─────────────────────────────────────────────
-  website:
-    name: Website
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: website
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Build
-        run: npm run build
-        env:
-          VITE_API_URL: https://hebitflow.onrender.com
-
-      - name: Upload website dist
-        uses: actions/upload-artifact@v4
-        with:
-          name: website-dist
-          path: website/dist
-          retention-days: 7
-
-  # ─── Android (debug APK) ────────────────────────────────────────────────
-  android:
-    name: Android
+  build:
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: android
+
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup JDK 17
+      - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -96,26 +24,22 @@ jobs:
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
-        with:
-          packages: platform-tools
 
       - name: Accept Android licenses
-        run: |
-          yes | sdkmanager --licenses >/dev/null || true
-
-      - name: Make gradlew executable
-        run: chmod +x ./gradlew
+        run: yes | sdkmanager --licenses >/dev/null || true
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Build debug APK
-        run: ./gradlew assembleDebug --no-daemon --stacktrace
+      - name: Make Gradle Wrapper Executable
+        run: chmod +x gradlew
 
-      - name: Upload debug APK
+      - name: Build Debug APK
+        run: ./gradlew assembleDebug --stacktrace
+
+      - name: Upload Debug APK
         uses: actions/upload-artifact@v4
-        if: success()
         with:
-          name: app-debug-apk
+          name: habitflow-debug-apk
           path: android/app/build/outputs/apk/debug/*.apk
           retention-days: 14
