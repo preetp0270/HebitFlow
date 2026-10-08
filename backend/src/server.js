@@ -87,6 +87,11 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Lightweight keep-alive endpoint (used by self-ping on free hosts like Render)
+app.get('/api/ping', (req, res) => {
+  res.json({ success: true, pong: true, timestamp: new Date().toISOString() });
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api/habits', habitRoutes);
 app.use('/api/statistics', statisticsRoutes);
@@ -101,9 +106,38 @@ app.use(errorHandler);
 
 if (require.main === module) {
   connectDB().then(() => {
-    app.listen(config.port, () => {
+    app.listen(config.port, '0.0.0.0', () => {
       console.log(`[Server] HabitFlow API running on port ${config.port} (${config.nodeEnv})`);
       console.log(`[CORS] CLIENT_URL=${config.clientUrl}`);
+
+      // Keep-alive for free hosts (e.g. Render) that spin down after idle time.
+      // Self-ping every 9 minutes so the service stays warm and avoids ~50s cold starts.
+      const baseUrl =
+        process.env.RENDER_EXTERNAL_URL ||
+        process.env.APP_BASE_URL ||
+        process.env.BACKEND_URL;
+      if (!baseUrl) {
+        console.warn(
+          '[Keep-alive] Skipped: set RENDER_EXTERNAL_URL or APP_BASE_URL to your public API URL'
+        );
+        return;
+      }
+
+      const pingUrl = `${baseUrl.replace(/\/$/, '')}/api/ping`;
+      const intervalMs = 9 * 60 * 1000; // 9 minutes (under typical 15-min free idle limit)
+
+      setInterval(async () => {
+        try {
+          const res = await fetch(pingUrl);
+          console.log(
+            `[Keep-alive] ping ${res.status} at ${new Date().toLocaleTimeString()}`
+          );
+        } catch (e) {
+          console.warn(`[Keep-alive] failed: ${e.message}`);
+        }
+      }, intervalMs);
+
+      console.log(`[Keep-alive] Self-ping every 9 min → ${pingUrl}`);
     });
   });
 }
